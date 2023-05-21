@@ -1,11 +1,11 @@
-from metaflow import FlowSpec, step, card, conda_base, project, current, Parameter, Flow, trigger
+from metaflow import FlowSpec, step, card, conda_base, project, current, retry, catch, timeout, Parameter, Flow, trigger
 from metaflow.cards import Markdown, Table, Image, Artifact
 
 URL = "https://outerbounds-datasets.s3.us-west-2.amazonaws.com/taxi/latest.parquet"
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 @trigger(events=['s3'])
-@conda_base(libraries={'pandas': '1.4.2', 'pyarrow': '11.0.0', 'numpy': '1.21.2', 'scikit-learn': '1.1.2'})
+@conda_base(libraries={'pandas': '1.4.2', 'pyarrow': '11.0.0', 'numpy': '1.21.2', 'scikit-learn': '1.1.2', 'xgboost' : '1.7.4'})
 @project(name="taxi_fare_pred")
 class TaxiFarePrediction(FlowSpec):
 
@@ -25,7 +25,10 @@ class TaxiFarePrediction(FlowSpec):
         for f in obviously_bad_data_filters:
             df = df[f]    
         return df
-
+    
+    @timeout(minutes=5)
+    @catch(var="read_failure")
+    @retry(times=4)
     @step
     def start(self):
 
