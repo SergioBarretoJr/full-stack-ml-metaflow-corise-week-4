@@ -39,7 +39,7 @@ class TaxiFarePrediction(FlowSpec):
             obj = s3.get(URL)
             df = pd.read_parquet(obj.path)
 
-        self.self.df = self.transform_features(df)
+        self.df = self.transform_features(df)
 
         self.X = self.df["trip_distance"].values.reshape(-1, 1)
         self.y = self.df["total_amount"].values
