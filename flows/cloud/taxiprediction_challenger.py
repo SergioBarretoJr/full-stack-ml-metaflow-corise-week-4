@@ -6,8 +6,8 @@ DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 @trigger(events=['s3'])
 @conda_base(libraries={'pandas': '1.4.2', 'pyarrow': '11.0.0', 'numpy': '1.21.2', 'scikit-learn': '1.1.2', 'xgboost' : '1.7.4'})
-@project(name="taxi_fare_pred")
-class TaxiFarePrediction(FlowSpec):
+@project(name="fare_pred")
+class TaxiFarePredictionFinal(FlowSpec):
 
     data_url = Parameter("data_url", default=URL)
 
@@ -26,9 +26,9 @@ class TaxiFarePrediction(FlowSpec):
             df = df[f]    
         return df
     
-    #@timeout(minutes=5)
-    #@catch(var="read_failure")
-    #@retry(times=4)
+    @timeout(minutes=5)
+    @catch(var="read_failure")
+    @retry(times=2)
     @step
     def start(self):
 
@@ -86,7 +86,7 @@ class TaxiFarePrediction(FlowSpec):
     def validate(self):
         from sklearn.model_selection import cross_val_score
         self.scores = cross_val_score(self.model, self.X, self.y, cv=5)
-        current.card.append(Markdown("# Taxi Fare Prediction Results"))
+        current.card.append(Markdown("# Taxi Fare Prediction Final Week 4 Results - challenger"))
         current.card.append(Table(self.gather_sibling_flow_run_results(), headers=["Pass/fail", "Run ID", "Created At", "R^2 score", "Stderr"]))
         self.next(self.end)
 
@@ -96,4 +96,4 @@ class TaxiFarePrediction(FlowSpec):
 
 
 if __name__ == "__main__":
-    TaxiFarePrediction()
+    TaxiFarePredictionFinal()
