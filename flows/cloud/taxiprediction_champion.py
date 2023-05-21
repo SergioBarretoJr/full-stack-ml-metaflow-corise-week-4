@@ -1,7 +1,7 @@
-from metaflow import FlowSpec, step, card, conda_base, project, retry, catch, current, timeout, Parameter, Flow, trigger
+from metaflow import FlowSpec, step, card, S3,conda_base, project, retry, catch, current, timeout, Parameter, Flow, trigger
 from metaflow.cards import Markdown, Table, Image, Artifact
 
-URL = "https://outerbounds-datasets.s3.us-west-2.amazonaws.com/taxi/latest.parquet"
+URL = 's3://outerbounds-datasets/taxi/latest.parquet'
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 @trigger(events=['s3'])
@@ -26,16 +26,20 @@ class TaxiFarePrediction(FlowSpec):
             df = df[f]    
         return df
     
-    @timeout(minutes=5)
-    @catch(var="read_failure")
-    @retry(times=4)
+    #@timeout(minutes=5)
+    #@catch(var="read_failure")
+    #@retry(times=4)
     @step
     def start(self):
 
         import pandas as pd
         from sklearn.model_selection import train_test_split
 
-        self.df = self.transform_features(pd.read_parquet(self.data_url))
+        with S3() as s3:
+            obj = s3.get(URL)
+            df = pd.read_parquet(obj.path)
+
+        self.self.df = self.transform_features(df)
 
         self.X = self.df["trip_distance"].values.reshape(-1, 1)
         self.y = self.df["total_amount"].values
